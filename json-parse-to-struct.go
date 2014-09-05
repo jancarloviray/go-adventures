@@ -7,14 +7,14 @@ import (
 	"fmt"
 )
 
-func main(){
+func main() {
 	var s ServerList
-	/* 
-	NOTE: backticks are alternative to string syntax
-	and are essentially the same as "jons:\"type\""
-	*/ 
+	/*
+		NOTE: backticks are alternative to string syntax
+		and are essentially the same as "jons:\"type\""
+	*/
 	str := `{"servers":[{"serverName":"Test1","someKey":"hello!","serverIP":"127.0.0.1"},{"serverName":"Test2","serverIP":"127.0.0.2"}]}`
-	
+
 	// func Unmarshal(data []byte, v interface{}) error
 	json.Unmarshal([]byte(str), &s)
 
@@ -32,5 +32,5 @@ essentially is the same as _.pick() in underscore.
 */
 type Server struct {
 	ServerName string
-	ServerIP string
+	ServerIP   string
 }
