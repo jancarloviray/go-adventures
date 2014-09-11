@@ -4,13 +4,13 @@
   </head>
 
   <body style="margin: 20px;">
-    <h1>Wishes</h1>
+    <h1>Tasks</h1>
     {{range .}}
-      <div> {{.Name}} - {{.Description}}</div>
+      <div> {{.Title}} - {{.Done}}</div>
     {{ end }}
 
-    <h1>Add a wish</h1>
-    <form action="/wishes" method="POST" class="pure-form">
+    <h1>Add</h1>
+    <form action="/tasks" method="POST" class="pure-form">
       <input type="text" name="name" placeholder="name" />
       <input type="text" name="description" placeholder="description" />
       <input type="submit" value="submit" class="pure-button pure-button-primary"/>
