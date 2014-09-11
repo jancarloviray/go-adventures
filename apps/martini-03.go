@@ -24,12 +24,12 @@ var dbDir string = "db"
 
 func main() {
 	m := martini.Classic()
-	m.Run()
 
 	setup()
 	middlewares(m)
 	routes(m)
 
+	m.Run()
 	defer cleanup()
 }
 
@@ -135,8 +135,8 @@ func setupDB() {
 func setupDummy(db *db.DB) {
 	dbTasks := db.Use("Tasks")
 	dummyTasks := []map[string]interface{}{
-		map[string]interface{}{"title": "Learn Go", "done": false},
-		map[string]interface{}{"title": "Learn MongoDB", "done": false},
+		map[string]interface{}{"title": "Get Milk", "done": true},
+		map[string]interface{}{"title": "Drink Milk", "done": false},
 	}
 	for _, t := range dummyTasks {
 		if _, err := dbTasks.Insert(t); err != nil {

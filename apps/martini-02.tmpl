@@ -5,11 +5,13 @@
 
   <body style="margin: 20px;">
     <h1>Tasks</h1>
+    <h2>List</h2>
+    
     {{range .}}
-      <div> {{.Title}} - {{.Done}}</div>
+      <div>Title: {{.Title}} - Done: {{.Done}}</div>
     {{ end }}
 
-    <h1>Add</h1>
+    <h2>Add</h2>
     <form action="/tasks" method="POST" class="pure-form">
       <input type="text" name="title" placeholder="name" />
       <input type="text" name="done" placeholder="done?" />
