@@ -24,11 +24,13 @@ var dbDir string = "db"
 
 func main() {
 	m := martini.Classic()
+	m.Run()
+
 	setup()
 	middlewares(m)
 	routes(m)
-	m.Run()
-	defer destroy()
+
+	defer cleanup()
 }
 
 func setup() {
@@ -44,14 +46,13 @@ func routes(m *martini.ClassicMartini) {
 	m.Get("/tasks", func(r render.Render, db *db.DB) {
 		r.HTML(200, "martini-02", GetAll(db))
 	})
-
 	m.Post("/tasks", binding.Form(Task{}), func(task Task, r render.Render, db *db.DB) {
 		CreateTask(db, &task)
 		r.HTML(200, "martini-02", GetAll(db))
 	})
 }
 
-func destroy() {
+func cleanup() {
 	os.RemoveAll(dbDir)
 }
 
@@ -67,9 +68,8 @@ type Task struct {
 // ROUTE HANDLERS
 
 func GetAll(db *db.DB) Tasks {
-	tasks := Tasks{}
+	tasks, t := Tasks{}, Task{}
 	db.Use("Tasks").ForEachDoc(func(id int, body []byte) (next bool) {
-		t := Task{}
 		json.Unmarshal(body, &t)
 		tasks = append(tasks, t)
 		return true
@@ -95,7 +95,6 @@ func DB() martini.Handler {
 	if err != nil {
 		panic(err)
 	}
-
 	// return will be called on every request
 	return func(c martini.Context) {
 		// defer myDB.Close() // for some reason, this prevents connection from completing
@@ -114,13 +113,10 @@ func DB() martini.Handler {
 
 func setupDB() {
 	os.RemoveAll(dbDir)
-
 	myDB, err := db.OpenDB(dbDir)
-
 	if err != nil {
 		panic(err)
 	}
-
 	if err := myDB.Create("Tasks"); err != nil {
 		panic(err)
 	}
@@ -130,9 +126,7 @@ func setupDB() {
 	for key, name := range myDB.AllCols() {
 		fmt.Println("Existing Collection:", key, name)
 	}
-
 	setupDummy(myDB)
-
 	if err := myDB.Close(); err != nil {
 		panic(err)
 	}
@@ -140,12 +134,10 @@ func setupDB() {
 
 func setupDummy(db *db.DB) {
 	dbTasks := db.Use("Tasks")
-
 	dummyTasks := []map[string]interface{}{
 		map[string]interface{}{"title": "Learn Go", "done": false},
 		map[string]interface{}{"title": "Learn MongoDB", "done": false},
 	}
-
 	for _, t := range dummyTasks {
 		if _, err := dbTasks.Insert(t); err != nil {
 			panic(err)
