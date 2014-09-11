@@ -1,5 +1,11 @@
 /*
-Tying DB
+Embedded Database
+to install:
+go get "github.com/HouzuoGuo/tiedot/db"
+go get "github.com/codegangsta/martini"
+go get "github.com/codegangsta/martini-contrib/binding"
+go get "github.com/codegangsta/martini-contrib/render"
+go run martini-03.go
 */
 
 package main
@@ -9,6 +15,7 @@ import (
 	"fmt"
 	"github.com/HouzuoGuo/tiedot/db"
 	"github.com/codegangsta/martini"
+	"github.com/codegangsta/martini-contrib/binding"
 	"github.com/codegangsta/martini-contrib/render"
 	"os"
 )
@@ -16,9 +23,8 @@ import (
 var dbDir string = "db"
 
 func main() {
-	setupDB()
-
 	m := martini.Classic()
+	setupDB()
 
 	m.Use(render.Renderer(render.Options{Directory: "."}))
 	m.Use(DB())
@@ -27,54 +33,52 @@ func main() {
 		r.HTML(200, "martini-02", GetAll(db))
 	})
 
+	m.Post("/tasks", binding.Form(Task{}), func(task Task, r render.Render, db *db.DB) {
+		CreateTask(db, &task)
+		r.HTML(200, "martini-02", GetAll(db))
+	})
+
 	m.Run()
 
-	defer func() {
-		os.RemoveAll(dbDir)
-	}()
+	defer func() { os.RemoveAll(dbDir) }()
 }
 
-type dynamicType map[string]interface{}
+// DATA STRUCTURES
 
-func GetAll(db *db.DB) []dynamicType {
-	arrayOfDynamicType := []dynamicType{}
-	var dyna dynamicType
+type Tasks []Task
 
-	tasks := db.Use("Tasks")
+type Task struct {
+	Title string `form:"title" binding:"required"`
+	Done  bool   `form:"done"`
+}
 
-	_, err := tasks.Insert(map[string]interface{}{
-		"Title": "Get Milk",
-		"Done":  false,
-	})
+// HANDLERS
 
-	tasks.Insert(map[string]interface{}{
-		"Title": "Get Towel",
-		"Done":  true,
-	})
-
-	if err != nil {
-		panic(err)
-	}
-
-	tasks.ForEachDoc(func(id int, docContent []byte) (willMoveOn bool) {
-		json.Unmarshal([]byte(docContent), &dyna)
-		arrayOfDynamicType = append(arrayOfDynamicType, dyna)
-		fmt.Println(id, string(docContent), &dyna)
+func GetAll(db *db.DB) Tasks {
+	tasks := Tasks{}
+	db.Use("Tasks").ForEachDoc(func(id int, body []byte) (next bool) {
+		t := Task{}
+		json.Unmarshal(body, &t)
+		tasks = append(tasks, t)
 		return true
 	})
-
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println(arrayOfDynamicType)
-
-	return arrayOfDynamicType
+	return tasks
 }
 
-// Middleware (will run on every request)
+func CreateTask(db *db.DB, task *Task) {
+	// why this 3-line mess? because interface of collection.Insert is this:
+	// func (col *Col) Insert(doc map[string]interface{}) (id int, err error) { }
+	jsonTask := map[string]interface{}{}
+	j, _ := json.Marshal(task)
+	json.Unmarshal(j, &jsonTask)
+
+	dbTasks := db.Use("Tasks")
+	dbTasks.Insert(jsonTask)
+}
+
+// MIDDLEWARES
+
 func DB() martini.Handler {
-	// preparation
 	myDB, err := db.OpenDB(dbDir)
 	if err != nil {
 		panic(err)
@@ -94,6 +98,8 @@ func DB() martini.Handler {
 
 }
 
+// SETUP
+
 func setupDB() {
 	os.RemoveAll(dbDir)
 
@@ -106,16 +112,31 @@ func setupDB() {
 	if err := myDB.Create("Tasks"); err != nil {
 		panic(err)
 	}
-
 	if err := myDB.Create("Users"); err != nil {
 		panic(err)
 	}
-
 	for key, name := range myDB.AllCols() {
 		fmt.Println("Existing Collection:", key, name)
 	}
 
+	setupDummy(myDB)
+
 	if err := myDB.Close(); err != nil {
 		panic(err)
+	}
+}
+
+func setupDummy(db *db.DB) {
+	dbTasks := db.Use("Tasks")
+
+	dummyTasks := []map[string]interface{}{
+		map[string]interface{}{"title": "Learn Go", "done": false},
+		map[string]interface{}{"title": "Learn MongoDB", "done": false},
+	}
+
+	for _, t := range dummyTasks {
+		if _, err := dbTasks.Insert(t); err != nil {
+			panic(err)
+		}
 	}
 }
