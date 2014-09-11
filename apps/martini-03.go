@@ -24,11 +24,23 @@ var dbDir string = "db"
 
 func main() {
 	m := martini.Classic()
-	setupDB()
+	setup()
+	middlewares(m)
+	routes(m)
+	m.Run()
+	defer destroy()
+}
 
+func setup() {
+	setupDB()
+}
+
+func middlewares(m *martini.ClassicMartini) {
 	m.Use(render.Renderer(render.Options{Directory: "."}))
 	m.Use(DB())
+}
 
+func routes(m *martini.ClassicMartini) {
 	m.Get("/tasks", func(r render.Render, db *db.DB) {
 		r.HTML(200, "martini-02", GetAll(db))
 	})
@@ -37,10 +49,10 @@ func main() {
 		CreateTask(db, &task)
 		r.HTML(200, "martini-02", GetAll(db))
 	})
+}
 
-	m.Run()
-
-	defer func() { os.RemoveAll(dbDir) }()
+func destroy() {
+	os.RemoveAll(dbDir)
 }
 
 // DATA STRUCTURES
@@ -52,7 +64,7 @@ type Task struct {
 	Done  bool   `form:"done"`
 }
 
-// HANDLERS
+// ROUTE HANDLERS
 
 func GetAll(db *db.DB) Tasks {
 	tasks := Tasks{}
