@@ -1,1 +1,3 @@
 apps/db/
+apps/martini/db
+.idea
