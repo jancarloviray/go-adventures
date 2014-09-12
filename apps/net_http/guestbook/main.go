@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/HouzuoGuo/tiedot/db"
 	"github.com/fatih/structs"
 	"html/template"
@@ -46,9 +45,39 @@ func Error(w ResponseWriter, error string, code int)
 */
 
 func hello(w http.ResponseWriter, req *http.Request) {
-	// d, err := db.OpenDB(DBdir)
+	// QUERYING
 
-	if err := index.Execute(w, nil); err != nil {
+	d, err := db.OpenDB(DBdir)
+
+	if err != nil {
+		panic(err)
+	}
+
+	docEntries := d.Use("Entries")
+
+	// placeholder
+	entries := Entries{}
+	queryResults := make(map[int]struct{})
+
+	// build query
+	var query interface{}
+
+	json.Unmarshal([]byte(`"all"`), &query)
+
+	if err := db.EvalQuery(query, docEntries, &queryResults); err != nil {
+		panic(err)
+	}
+
+	// res contains IDs
+	for id := range queryResults {
+		readBack, _ := docEntries.Read(id)
+		entry := Entry{}
+		j, _ := json.Marshal(readBack) // {"ID":2,"Message":"Go language is awesome","Name":"Golang","Timestamp":{}}
+		json.Unmarshal(j, &entry)      // {2 0001-01-01 00:00:00 +0000 UTC Golang Go language is awesome}
+		entries = append(entries, &entry)
+	}
+
+	if err := index.Execute(w, entries); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -91,33 +120,13 @@ func initialize() {
 
 	// INSERT
 
-	entries := &Entries{
+	entries := Entries{
 		&Entry{1, time.Now(), "Entry 1", "First Entry!"},
 		&Entry{2, time.Now(), "Golang", "Go language is awesome"},
 	}
 
-	for _, entry := range *entries {
+	for _, entry := range entries {
 		docEntries.Insert(structs.New(entry).Map())
-	}
-
-	// QUERYING
-
-	var query interface{}
-	res := make(map[int]struct{})
-
-	json.Unmarshal([]byte(`"all"`), &query)
-
-	if err := db.EvalQuery(query, docEntries, &res); err != nil {
-		panic(err)
-	}
-
-	// res contains IDs
-	for id := range res {
-		readBack, err := docEntries.Read(id)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Printf("Query Returned: %v\n", readBack)
 	}
 }
 
