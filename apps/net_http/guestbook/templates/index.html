@@ -8,7 +8,7 @@
     <ul class="guests">
         
         <!-- Notice we don’t worry about any kind of injection. The html/template package is super awesome and handles that by knowing what it’s outputing and the context in which the data is being used. If you’re in an html context, it will escape the html properly. If you’re in a script or url context, it knows and will apply the appropriate esacping. No modifying the data in the database. No “sanitizing”. Just doing the right thing, every time. -->
-        
+
         {{ range . }}
         <li>
         	<p>{{ .Name }} - {{ .Timestamp}}</p>
@@ -16,4 +16,18 @@
         </li>
         {{ end }}
     </ul>
+
+    <hr/>
+
+    <form action="/add" method="POST">
+        <p>Name:
+        	<input type="text" name="name">
+    	</p>
+        <p>Message: 
+        	<textarea name="message" rows="10" cols="40"></textarea>
+        </p>
+        <p>
+        	<button>Add</button>
+    	</p>
+    </form>
 {{ end }}
