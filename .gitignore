@@ -1,3 +1,4 @@
 apps/db/
 apps/martini/db
 .idea
+apps/net_http/guestbook/db
